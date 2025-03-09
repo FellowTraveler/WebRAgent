@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Document{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('admin.index') }}">Admin</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('admin.collections') }}">Collections</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('admin.collection_detail', collection_id=collection.id) }}">{{ collection.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Upload Document</li>
+        </ol>
+    </nav>
+
+    <h1 class="mb-4">Upload Document to Collection: {{ collection.name }}</h1>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="admin-panel">
+                <h3>Upload Documents</h3>
+                <p>Upload one or more documents to be processed and added to the collection. Supported formats include:</p>
+                <ul class="mb-3">
+                    <li><strong>Documents:</strong> PDF, Word (.doc, .docx), PowerPoint (.ppt, .pptx), Excel (.xls, .xlsx)</li>
+                    <li><strong>Web/Markup:</strong> HTML, Markdown, AsciiDoc</li>
+                    <li><strong>Data:</strong> CSV, XML</li>
+                    <li><strong>Images:</strong> JPG, PNG, TIFF (with OCR)</li>
+                </ul>
+                
+                <form method="POST" action="{{ url_for('admin.upload_document', collection_id=collection.id) }}" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Common Document Title Prefix (Optional)</label>
+                        <input type="text" class="form-control" id="title" name="title" placeholder="Enter a common prefix for the documents">
+                        <div class="form-text">If left blank, filenames will be used as titles. For multiple files, the filename will be appended.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="documents" class="form-label">Document Files</label>
+                        <input type="file" class="form-control" id="documents" name="documents" multiple required>
+                        <div class="form-text">Select one or more files to upload. Hold Ctrl/Cmd to select multiple files.</div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="use-docling" name="use_docling">
+                            <label class="form-check-label" for="use-docling">
+                                Use Docling for document processing (fallback service used by default)
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Document Chunking Options</label>
+                        <div class="card p-3">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="chunk-strategy" class="form-label">Chunking Strategy:</label>
+                                    <select class="form-select" id="chunk-strategy" name="chunk_strategy">
+                                        <option value="sentence" selected>Sentence-based</option>
+                                        <option value="paragraph">Paragraph-based</option>
+                                        <option value="fixed">Fixed-size</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="chunk-size" class="form-label">Chunk Size (chars):</label>
+                                    <input type="number" class="form-control" id="chunk-size" name="chunk_size" value="1000" min="100" max="8000">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="chunk-overlap" class="form-label">Overlap (chars):</label>
+                                    <input type="number" class="form-control" id="chunk-overlap" name="chunk_overlap" value="200" min="0" max="1000">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="extract-metadata" class="form-label">Metadata Extraction:</label>
+                                    <select class="form-select" id="extract-metadata" name="extract_metadata">
+                                        <option value="basic" selected>Basic</option>
+                                        <option value="enhanced">Enhanced</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Upload & Process</button>
+                        <a href="{{ url_for('admin.collection_detail', collection_id=collection.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="admin-panel">
+                <h3>Processing Information</h3>
+                <p>When you upload documents, the following steps occur for each file:</p>
+                <ol>
+                    <li>The document is saved to the server</li>
+                    <li>Text is extracted from the document</li>
+                    <li>The text is split into chunks with overlap</li>
+                    <li>Each chunk is embedded using a neural network</li>
+                    <li>The embeddings and text chunks are stored in Qdrant</li>
+                </ol>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle-fill"></i> Depending on document size and quantity, processing may take some time.
+                </div>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle-fill"></i> When uploading multiple files, each file is processed sequentially. Large batches may take several minutes to complete.
+                </div>
+                <div class="alert alert-info">
+                    <i class="bi bi-lightbulb-fill"></i> Office documents and images can be processed using Docling, which may require additional processing time but provides better text extraction.
+                </div>
+                
+                <h4 class="mt-4">Chunking Strategies</h4>
+                <ul>
+                    <li><strong>Sentence-based:</strong> Divides text into chunks while preserving sentence boundaries. Best for general purpose use.</li>
+                    <li><strong>Paragraph-based:</strong> Maintains paragraph structure. Ideal for documents with distinct sections.</li>
+                    <li><strong>Fixed-size:</strong> Creates chunks of exact character length. Best for uniform processing but may break sentences.</li>
+                </ul>
+                
+                <h4 class="mt-4">Chunking Parameters</h4>
+                <ul>
+                    <li><strong>Chunk Size:</strong> Maximum characters per chunk. Larger chunks provide more context but may reduce relevance precision.</li>
+                    <li><strong>Overlap:</strong> Characters shared between adjacent chunks. Higher overlap improves context continuity.</li>
+                </ul>
+                
+                <h4 class="mt-4">Metadata Extraction</h4>
+                <ul>
+                    <li><strong>Basic:</strong> Stores essential document information (filename, size, chunk count).</li>
+                    <li><strong>Enhanced:</strong> Additionally extracts document statistics, language detection, potential title and headers, and other semantic information.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
