@@ -4,60 +4,108 @@ A Retrieval-Augmented Generation (RAG) web application built with Flask and Qdra
 
 © 2024 Dennis Kruyt. All rights reserved.
 
+## Introduction
+
+**WebRAgent** is a powerful Retrieval-Augmented Generation system that merges Large Language Models (LLMs) with a vector database (Qdrant) to provide contextually rich answers to user queries. By offering various search modes—including **Collection Search** for internal documents, **Web Search** via SearXNG, and a more comprehensive **Deep Web Search**—WebRAgent ensures you can find the information you need quickly and thoroughly. For more complex questions, WebRAgent’s **Agent Search** functionality breaks down queries into sub-problems and compiles a holistic answer. You can also visualize the relationships between concepts using the built-in **Mind Map** generator. 
+
+If you prefer to keep your LLM-powered workflows completely private and self-contained, you can integrate Ollama into WebRAgent. Ollama runs entirely on your local machine.
+
+## 📷 Screenshots
+
+### Search
+![Search](screenshots/search.png)
+
+### Context
+![Context](screenshots/context.png)
+
+### Collections
+![Collections](screenshots/collections.png)
+
+### Upload
+![Upload](screenshots/upload.png)
+
 ## 📋 Overview
 
 This application implements a RAG system that combines the power of Large Language Models (LLMs) with a vector database (Qdrant) to provide context-enhanced responses to user queries. It features:
 
-- 💬 User query interface for asking questions
-- 🔐 Admin interface for managing document collections
-- 📄 Document processing and embedding
+- 💬 User query interface for asking questions  
+- 🔐 Admin interface for managing document collections  
+- 📄 Document processing and embedding  
 - 🤖 Integration with multiple LLM providers (OpenAI, Claude, Ollama)
 
 ## ✨ Features
 
-- 🖥️ **User Interface**: Clean, intuitive interface to submit queries and receive LLM responses
-- 🌐 **Web Search**: Search the web directly using SearXNG integration with LLM result interpretation
-- 🤖 **Agent Search**: Break down complex questions into sub-queries for more comprehensive answers
-- 🧠 **Mind Maps**: Visualize response concepts with automatically generated mind maps
-- 🔎 **Vector Search**: Retrieve relevant document snippets based on semantic similarity
-- 👤 **Admin Interface**: Securely manage collections and upload documents
-- 📝 **Document Processing**: Automatically extract text, chunk, embed, and store documents
-- 🧠 **Multiple LLM Support**: Configure your preferred LLM provider (OpenAI, Claude, Ollama)
-- 🔍 **Dynamic Embedding Models**: Automatically detects and uses available embedding models from all configured providers
+### Collection Search
+Search within your **document collections** for relevant information. Simply select a specific collection from the dropdown menu to limit queries to that collection’s contents.
+
+### Web Search
+Search the internet for information using **SearXNG**. This option fetches search results from various search engines and synthesizes them with LLMs for a comprehensive answer.
+
+### Deep Web Search
+An **enhanced web search** that scrapes and processes the full content of web pages to extract more detailed information. This option:
+- Retrieves search results from the web  
+- Scrapes the full content of each page  
+- Analyzes the content to extract relevant information  
+- Takes longer to process but provides more **comprehensive** results  
+
+### Agent Search
+Enhances the search process by breaking down complex questions into smaller, more focused sub-queries:
+- Analyzes your question to identify key components  
+- Creates targeted sub-queries for each component  
+- Processes each sub-query separately  
+- Synthesizes a comprehensive answer from all results  
+- Particularly useful for **multi-part questions**  
+
+#### Agent Strategies
+- **Direct Decomposition**: Immediately breaks your query down into sub-queries before searching  
+- **Informed Decomposition**: First performs a preliminary search, then creates targeted follow-up queries based on initial findings  
+
+### Generate Mind Map
+Automatically creates a **visual mind map** representing the answer, helping you understand the relationships between concepts at a glance.
+
+### Number of Results
+Controls how many source documents or web pages will be used to generate the answer. Increasing this number can provide a more thorough overview but may increase processing time.
+
+### Additional Highlights
+- 🖥️ **User Interface**: A clean, intuitive interface to submit queries and receive LLM responses  
+- 🔎 **Vector Search**: Retrieve relevant document snippets based on semantic similarity  
+- 👤 **Admin Interface**: Securely manage collections and upload documents  
+- 📝 **Document Processing**: Automatically extract text, chunk, embed, and store documents  
+- 🧠 **Multiple LLM Support**: Configure your preferred LLM provider (OpenAI, Claude, Ollama)  
+- 🔍 **Dynamic Embedding Models**: Automatically detects and uses available embedding models from all configured providers  
 
 ## 📋 Prerequisites
 
-- 🐍 Python 3.8+
-- 🗄️ [Qdrant](https://qdrant.tech/documentation/quick-start/) running locally or remotely
-- 🔑 API keys for your chosen LLM provider
+- 🐍 Python 3.8+  
+- 🗄️ [Qdrant](https://qdrant.tech/documentation/quick-start/) running locally or remotely  
+- 🔑 API keys for your chosen LLM provider  
 
 ## 🚀 Installation
 
 ### 💻 Option 1: Local Installation
 
-1. Clone the repository:
+1. **Clone the repository**:
    ```bash
    git clone https://github.com/dkruyt/WebRAgent.git
    cd WebRAgent
    ```
 
-2. Create and activate a virtual environment:
+2. **Create and activate a virtual environment**:
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. Install dependencies:
+3. **Install dependencies**:
    ```bash
    pip install -r requirements.txt
    ```
 
-4. Copy the example environment file and configure it with your settings:
+4. **Copy the example environment file and configure it**:
    ```bash
    cp .env.example .env
    ```
-
-   Then edit the `.env` file with your preferred settings. Here are the key settings to configure:
+   Then edit the `.env` file with your preferred settings. For example:
    ```
    # API Keys for LLM Providers (uncomment and add your keys for the providers you want to use)
    # At least one provider should be configured
@@ -82,45 +130,40 @@ This application implements a RAG system that combines the power of Large Langua
    ADMIN_PASSWORD=change_me_in_production
    ```
 
-   Note: The system will automatically detect and use models from the providers you've configured:
-   
-   - If you set OPENAI_API_KEY, it will use OpenAI models for both LLM and embeddings
-   - If you set CLAUDE_API_KEY, it will use Claude models for LLM
-   - If you set OLLAMA_HOST, it will use Ollama models for both LLM and embeddings
-   - Sentence Transformers will be used as fallback embedding models
-   
-   There's no need to manually specify which models to use - the system dynamically detects available models.
+   The system will automatically detect and use models from the providers you've configured. For example:
+   - If `OPENAI_API_KEY` is set, it will use OpenAI models for both LLM and embeddings.
+   - If `CLAUDE_API_KEY` is set, it will use Claude models for LLM.
+   - If `OLLAMA_HOST` is set, it will use Ollama models for both LLM and embeddings.
+   - Sentence Transformers will be used as a fallback embedding model.
 
-5. Make sure you have Qdrant running locally or specify a remote instance in the `.env` file.
+5. **Ensure Qdrant is running** locally or specify a remote instance in the `.env` file.
 
-6. If using Ollama, make sure it's running locally or specify a remote instance in the `.env` file.
+6. **If using Ollama**, make sure it’s running locally or specify the remote instance in the `.env` file.
 
-7. Start the application:
+7. **Start the application**:
    ```bash
    python run.py
    ```
 
-8. Access the application at `http://localhost:5000`
+8. **Access the application** at `http://localhost:5000`.
 
 ### 🐳 Option 2: Docker Installation
 
-This project includes Docker and Docker Compose configurations for easy deployment.
-
-1. Clone the repository:
+1. **Clone the repository**:
    ```bash
    git clone https://github.com/dkruyt/WebRAgent.git
    cd WebRAgent
    ```
 
-2. Start the application with Docker Compose:
+2. **Start the application with Docker Compose**:
    ```bash
    docker-compose up -d
    ```
 
 3. The following services will be available:
-   - 🌐 RAG Web Application: http://localhost:5000
-   - 📊 Qdrant Dashboard: http://localhost:6333/dashboard
-   - 🔍 SearXNG Search Engine: http://localhost:8080
+   - 🌐 **RAG Web Application**: `http://localhost:5000`
+   - 📊 **Qdrant Dashboard**: `http://localhost:6333/dashboard`
+   - 🔍 **SearXNG Search Engine**: `http://localhost:8080`
 
 4. To shut down the application:
    ```bash
@@ -129,7 +172,7 @@ This project includes Docker and Docker Compose configurations for easy deployme
 
 ### 📥 Pre-downloading Ollama Models
 
-If you want to pre-download the Ollama models before starting the application:
+If you want to pre-download Ollama models before starting the application:
 
 ```bash
 # For main LLM models
@@ -147,54 +190,56 @@ The system will automatically detect these models if they're available in your O
 ## 📖 Usage
 
 ### 🔍 User Interface
-1. Navigate to the home page
-2. Choose your search method:
-   - **Document Search**: Select a collection from the dropdown
-   - **Web Search**: Toggle the "Web Search" option
-3. Enter your query in the text box
-4. Configure additional options (optional):
-   - **Generate Mind Map**: Toggle to visualize concepts related to your query
-   - **Agent Search**: Enable for complex questions that benefit from being broken down
-   - **Number of Results**: Adjust how many results to retrieve
-5. Submit your query and view the response
-6. Explore source documents or web sources that informed the answer
+1. **Navigate to the home page** (`http://localhost:5000`).  
+2. **Choose your search method**:
+   - **Collection Search**: Select a collection from the dropdown menu  
+   - **Web Search**: Toggle the “Web Search” option  
+   - **Deep Web Search**: Toggle “Deep Web Search” if you need to scrape and analyze full page contents  
+3. **Enter your query** in the text box.  
+4. **Configure additional options (optional)**:
+   - **Generate Mind Map**: Visualize concepts related to your query  
+   - **Agent Search**: Enable for complex queries; pick a strategy (Direct or Informed Decomposition)  
+   - **Number of Results**: Adjust how many results to retrieve  
+5. **Submit your query** and view the response.  
+6. **Explore source documents or web sources** that informed the answer.
 
 ### 🌐 Web Search
-1. Toggle the "Web Search" option on the main interface
-2. Enter your query
+1. Toggle the “Web Search” or “Deep Web Search” option on the main interface.  
+2. Enter your query.  
 3. The system will:
-   - Search the web using SearXNG
-   - Use an LLM to interpret and synthesize the search results
-   - Present a comprehensive answer along with source links
+   - Search the web using SearXNG.  
+   - Optionally scrape and analyze page content (Deep Web Search).  
+   - Use an LLM to interpret and synthesize the findings.  
+   - Present a comprehensive answer along with source links.
 
 ### 🤖 Agent Search
-1. Enable the "Agent Search" checkbox
+1. Enable the “Agent Search” checkbox.  
 2. Choose a strategy:
-   - **Direct Decomposition**: Breaks down your question into targeted sub-queries
-   - **Informed Decomposition**: Gets initial results first, then creates follow-up queries
-3. Submit your query to receive a comprehensive answer synthesized from multiple search operations
+   - **Direct Decomposition**: Breaks down your question into sub-queries immediately.  
+   - **Informed Decomposition**: Performs a preliminary search, then refines sub-queries based on initial results.  
+3. Submit your query to receive a comprehensive answer assembled from multiple targeted searches.
 
 ### 👤 Admin Interface
-1. Login with admin credentials (default: username `admin`, password `admin123`)
-2. Create new collections from the admin dashboard
-3. Upload documents to collections
-4. Documents are automatically processed and made available for retrieval
+1. **Login** with admin credentials (specified in your `.env` file).  
+2. **Create new collections** from the admin dashboard.  
+3. **Upload documents** to collections.  
+4. Documents are automatically processed and made available for retrieval in user queries.
 
 ## 🛠️ Technical Implementation
 
-- 🌐 **Flask**: Web framework for the application
-- 🗄️ **Qdrant**: Vector database for storing and retrieving document embeddings
-- 🔍 **SearXNG**: Self-hosted search engine for web search capabilities
-- 🤖 **Agent Framework**: Custom implementation for query decomposition and synthesis
-- 🧠 **Mind Map Generation**: Visualization system for query responses
+- 🌐 **Flask**: Web framework for the application  
+- 🗄️ **Qdrant**: Vector database for storing and retrieving document embeddings  
+- 🔍 **SearXNG**: Self-hosted search engine for web search capabilities  
+- 🤖 **Agent Framework**: Custom implementation for query decomposition and result synthesis  
+- 🧠 **Mind Map Generation**: Visualization of query responses and related concepts  
 - 🔤 **Embedding Models**:
-  - **SentenceTransformers**: Local embedding models (always available as fallback)
-  - **OpenAI Embeddings**: High-quality embeddings when API key is configured
-  - **Ollama Embeddings**: Local embedding models when Ollama is configured
-- 🔌 **Model Management**: Dynamic provider detection and configuration based on available environment variables
-- 🔐 **Flask-Login**: For admin authentication
-- 📚 **Python Libraries**: For document processing (PyPDF2, BeautifulSoup, etc.)
-- 📄 **Docling**: Advanced document processing capability for extracting text from various file formats
+  - **SentenceTransformers**: Local embedding models (fallback)  
+  - **OpenAI Embeddings**: High-quality embeddings when API key is set  
+  - **Ollama Embeddings**: Local embeddings when Ollama is configured  
+- 🔌 **Model Management**: Dynamic provider detection and configuration based on environment variables  
+- 🔐 **Flask-Login**: For admin authentication  
+- 📚 **Python Libraries**: For document processing (PyPDF2, BeautifulSoup, etc.)  
+- 📄 **Docling**: Advanced document processing for text extraction in various file formats  
 
 ## 📂 Project Structure
 
@@ -250,11 +295,10 @@ WebRAgent/
 
 ## 🔒 Security Notes
 
-- ⚠️ This application uses a simple in-memory user store for demo purposes
-- 🛡️ In a production environment, use a proper database with password hashing
-- 🔐 Configure HTTPS for secure communication
-- 🔑 Set a strong, unique `FLASK_SECRET_KEY`
-- 🚫 Do not expose admin routes to the public internet without proper security
+- 🛡️ In a production environment, use a proper database with password hashing  
+- 🔐 Configure HTTPS for secure communication  
+- 🔑 Set a strong, unique `FLASK_SECRET_KEY`  
+- 🚫 Do not expose admin routes to the public internet without proper security measures  
 
 ## 📜 License
 
@@ -266,11 +310,11 @@ MIT
 
 ## 🙏 Acknowledgements
 
-- 🗄️ [Qdrant](https://qdrant.tech/)
-- 🔤 [SentenceTransformers](https://www.sbert.net/)
-- 🌐 [Flask](https://flask.palletsprojects.com/)
-- 📄 [Docling](https://github.com/doclingjs/docling)
-- 🔍 [SearXNG](https://docs.searxng.org/)
-- 🤖 [OpenAI](https://openai.com/)
-- 🧠 [Anthropic](https://www.anthropic.com/)
-- 🦙 [Ollama](https://ollama.ai/)
+- 🗄️ [Qdrant](https://qdrant.tech/)  
+- 🔤 [SentenceTransformers](https://www.sbert.net/)  
+- 🌐 [Flask](https://flask.palletsprojects.com/)  
+- 📄 [Docling](https://github.com/doclingjs/docling)  
+- 🔍 [SearXNG](https://docs.searxng.org/)  
+- 🤖 [OpenAI](https://openai.com/)  
+- 🧠 [Anthropic](https://www.anthropic.com/)  
+- 🦙 [Ollama](https://ollama.ai/)  
