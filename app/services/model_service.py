@@ -548,30 +548,12 @@ class ModelService:
         return True
     
     def _update_environment_variables(self):
-        """Update environment variables to reflect current configuration"""
-        # Set LLM provider if available
-        if self.config["active"]["llm_provider"]:
-            os.environ["LLM_PROVIDER"] = self.config["active"]["llm_provider"]
+        """
+        This method previously updated environment variables with the configuration.
         
-        # Set model-specific variables based on configured provider and models
-        if self.config["active"]["llm_provider"] == "openai" and 'openai' in self.config["providers"]:
-            if self.config["active"]["models"]["openai_llm"]:
-                os.environ["OPENAI_MODEL"] = self.config["active"]["models"]["openai_llm"]
-            
-            if self.config["active"]["models"]["openai_embedding"]:
-                os.environ["OPENAI_EMBEDDING_MODEL"] = self.config["active"]["models"]["openai_embedding"]
-                
-        elif self.config["active"]["llm_provider"] == "claude" and 'claude' in self.config["providers"]:
-            if self.config["active"]["models"]["claude_llm"]:
-                os.environ["CLAUDE_MODEL"] = self.config["active"]["models"]["claude_llm"]
-                
-        elif self.config["active"]["llm_provider"] == "ollama" and 'ollama' in self.config["providers"]:
-            if self.config["active"]["models"]["ollama_llm"]:
-                os.environ["OLLAMA_MODEL"] = self.config["active"]["models"]["ollama_llm"]
-                
-            if self.config["active"]["models"]["ollama_embedding"]:
-                os.environ["OLLAMA_EMBEDDING_MODEL"] = self.config["active"]["models"]["ollama_embedding"]
-        
-        # Set embedding model
-        if self.config["active"]["models"]["embedding"]:
-            os.environ["EMBEDDING_MODEL"] = self.config["active"]["models"]["embedding"]
+        Now it's a no-op since we're using direct JSON config access instead of environment variables.
+        Kept for backward compatibility.
+        """
+        # We no longer set environment variables here
+        # All services should directly access the JSON config instead
+        pass
