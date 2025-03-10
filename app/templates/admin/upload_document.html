@@ -25,6 +25,7 @@
                     <li><strong>Web/Markup:</strong> HTML, Markdown, AsciiDoc</li>
                     <li><strong>Data:</strong> CSV, XML</li>
                     <li><strong>Images:</strong> JPG, PNG, TIFF (with OCR)</li>
+                    <li><strong>Archives:</strong> ZIP (will automatically extract and process all contained files)</li>
                 </ul>
                 
                 <form id="upload-form" method="POST" action="{{ url_for('admin.upload_document', collection_id=collection.id) }}" enctype="multipart/form-data">
@@ -36,7 +37,7 @@
                     <div class="mb-3">
                         <label for="documents" class="form-label">Document Files</label>
                         <input type="file" class="form-control" id="documents" name="documents" multiple required>
-                        <div class="form-text">Select one or more files to upload. Hold Ctrl/Cmd to select multiple files.</div>
+                        <div class="form-text">Select one or more files to upload. Hold Ctrl/Cmd to select multiple files. You can also upload ZIP files containing multiple documents.</div>
                     </div>
                     <div class="mb-3">
                         <div class="form-check">
@@ -182,6 +183,9 @@
                 </div>
                 <div class="alert alert-info">
                     <i class="bi bi-lightbulb-fill"></i> Office documents and images can be processed using Docling, which may require additional processing time but provides better text extraction.
+                </div>
+                <div class="alert alert-info">
+                    <i class="bi bi-archive-fill"></i> ZIP files will be automatically extracted, and each file within will be processed individually. This is useful for batch uploading organized documents.
                 </div>
                 
                 <h4 class="mt-4">Chunking Strategies</h4>
