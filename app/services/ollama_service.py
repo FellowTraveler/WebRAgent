@@ -1,15 +1,27 @@
 import os
 import requests
 from app.services.llm_service import LLMService
+from app.services.model_service import ModelService
 
 class OllamaService(LLMService):
     """Service for interacting with Ollama API"""
     
     def __init__(self):
         """Initialize the Ollama service"""
+        # Load configuration from the model service
+        self.model_service = ModelService()
+        self.config = self.model_service.config
+        
+        # Get Ollama host from environment variable
         self.ollama_host = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
         self.base_url = f"{self.ollama_host}/api"
-        self.model = os.getenv('OLLAMA_MODEL', 'llama2')
+        
+        # Get model from JSON config instead of environment variable
+        if self.config["active"]["models"]["ollama_llm"]:
+            self.model = self.config["active"]["models"]["ollama_llm"]
+        else:
+            # Fallback to a default model
+            self.model = 'llama2'
     
     def _generate_completion(self, system_message, user_message, max_tokens):
         """
