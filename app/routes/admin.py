@@ -219,6 +219,7 @@ def upload_document(collection_id):
         # Process each document
         document_service = DocumentService()
         processed_count = 0
+        files_to_process = []
         
         # Get form parameters
         use_docling = 'use_docling' in request.form and request.form.get('use_docling') == 'on'
@@ -243,33 +244,70 @@ def upload_document(collection_id):
         # Get metadata extraction level
         extract_metadata = request.form.get('extract_metadata', 'basic')
         
+        # Preprocessing step: handle ZIP files and prepare a list of all files to process
+        extracted_files = []
         for file in files:
-            # Skip if file is empty
             if file.filename == '':
                 continue
                 
+            # Check if it's a ZIP file
+            if file.filename.lower().endswith('.zip'):
+                # Save the zip file temporarily
+                zip_path = document_service.save_uploaded_file(file)
+                
+                # Extract and process each file in the ZIP
+                zip_contents = document_service.process_zip_file(zip_path)
+                extracted_files.extend(zip_contents)
+                
+                # Remove the original ZIP file once extracted (it's no longer needed)
+                try:
+                    os.remove(zip_path)
+                except Exception as e:
+                    logger.error(f"Error removing temporary ZIP file: {e}")
+            else:
+                # Regular file, add to the list to process
+                files_to_process.append((None, file))  # None as path because it's not saved yet
+        
+        # Add extracted files to the processing list
+        files_to_process.extend(extracted_files)
+        
+        # Now process all files (both directly uploaded and extracted from ZIP)
+        for file_path, file in files_to_process:
             # Set title based on input or filename
             if base_title:
                 # If we have multiple files and a base title, append the filename
-                if len(files) > 1:
+                if len(files_to_process) > 1:
                     title = f"{base_title} - {file.filename}"
                 else:
                     title = base_title
             else:
                 title = file.filename
             
-            # Process document with the specified parameters
-            document = document_service.process_document(
-                collection_id=collection_id,
-                file=file,
-                title=title,
-                use_docling=use_docling,
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-                chunk_strategy=chunk_strategy,
-                extract_metadata=extract_metadata
-            )
-            processed_count += 1
+            try:
+                # If file_path is provided (from ZIP extraction), use it directly
+                # Otherwise, let process_document save the file
+                document = document_service.process_document(
+                    collection_id=collection_id,
+                    file=file,
+                    title=title,
+                    use_docling=use_docling,
+                    chunk_size=chunk_size,
+                    chunk_overlap=chunk_overlap,
+                    chunk_strategy=chunk_strategy,
+                    extract_metadata=extract_metadata,
+                    file_path=file_path  # This will be None for regular uploads
+                )
+                processed_count += 1
+            except Exception as e:
+                logger.error(f"Error processing file {file.filename}: {str(e)}")
+                flash(f"Error processing {file.filename}: {str(e)}", "error")
+        
+        # Clean up extracted files if needed
+        for file_path, file in extracted_files:
+            try:
+                file.stream.close()  # Close the file handle
+            except:
+                pass
         
         if processed_count == 1:
             flash('1 document uploaded and processed successfully', 'success')

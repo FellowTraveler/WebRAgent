@@ -5,8 +5,9 @@ import mimetypes
 import logging
 import tempfile
 import shutil
+import zipfile
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Tuple
 
 # Docling imports for advanced document processing
 from docling.document_converter import DocumentConverter
@@ -17,6 +18,7 @@ from docling import document_converter
 from PyPDF2 import PdfReader
 from bs4 import BeautifulSoup
 import markdown
+from werkzeug.datastructures import FileStorage
 
 from app.models.document import Document
 from app.models.collection import Collection
@@ -81,6 +83,9 @@ class DocumentService:
             '.png': InputFormat.IMAGE,
             '.tif': InputFormat.IMAGE,
             '.tiff': InputFormat.IMAGE,
+            
+            # Archive formats - special handling
+            '.zip': 'ZIP_ARCHIVE',  # Not an InputFormat, handled specially
         }
         
     def save_uploaded_file(self, file):
@@ -97,6 +102,55 @@ class DocumentService:
         file_path = os.path.join(self.upload_dir, filename)
         file.save(file_path)
         return file_path
+        
+    def process_zip_file(self, zip_file_path):
+        """
+        Extract files from a ZIP archive and return paths to extracted files
+        
+        Args:
+            zip_file_path: Path to the ZIP file
+            
+        Returns:
+            List[Tuple[str, FileStorage]]: List of (extracted file path, file object) tuples
+        """
+        extracted_files = []
+        extract_dir = os.path.join(self.upload_dir, str(uuid.uuid4()) + "_extracted")
+        os.makedirs(extract_dir, exist_ok=True)
+        
+        try:
+            with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+                # Get list of files in the zip
+                file_list = [f for f in zip_ref.namelist() if not f.endswith('/')]
+                
+                # Extract each file
+                for file_name in file_list:
+                    # Extract the file
+                    extracted_path = os.path.join(extract_dir, os.path.basename(file_name))
+                    
+                    # Use a unique filename to avoid collisions
+                    unique_filename = str(uuid.uuid4()) + "_" + os.path.basename(file_name)
+                    extracted_path = os.path.join(extract_dir, unique_filename)
+                    
+                    # Extract the file
+                    with zip_ref.open(file_name) as source, open(extracted_path, 'wb') as target:
+                        shutil.copyfileobj(source, target)
+                    
+                    # Create a FileStorage-like object for compatibility with the rest of the code
+                    file_storage = FileStorage(
+                        stream=open(extracted_path, 'rb'),
+                        filename=os.path.basename(file_name),
+                        name=os.path.basename(file_name)
+                    )
+                    
+                    extracted_files.append((extracted_path, file_storage))
+                    
+            return extracted_files
+            
+        except Exception as e:
+            logger.error(f"Error extracting ZIP file: {str(e)}")
+            # Clean up the extraction directory if there was an error
+            shutil.rmtree(extract_dir, ignore_errors=True)
+            return []
     
     def extract_text(self, file_path, use_docling=False):
         """
@@ -483,7 +537,7 @@ class DocumentService:
         return metadata
         
     def process_document(self, collection_id, file, title, use_docling=False, chunk_size=1000, 
-                         chunk_overlap=200, chunk_strategy="sentence", extract_metadata="basic"):
+                         chunk_overlap=200, chunk_strategy="sentence", extract_metadata="basic", file_path=None):
         """
         Process an uploaded document - extract text, chunk it, and store in Qdrant
         
@@ -496,12 +550,14 @@ class DocumentService:
             chunk_overlap (int): Overlap between chunks in characters
             chunk_strategy (str): Chunking strategy to use
             extract_metadata (str): Metadata extraction level (basic or enhanced)
+            file_path (str, optional): If provided, use this path instead of saving the file
             
         Returns:
             Document: Created document
         """
-        # Save file
-        file_path = self.save_uploaded_file(file)
+        # Save file if not already saved (like from zip extraction)
+        if file_path is None:
+            file_path = self.save_uploaded_file(file)
         
         # Extract text using the specified processor
         text = self.extract_text(file_path, use_docling=use_docling)
