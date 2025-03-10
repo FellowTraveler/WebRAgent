@@ -435,12 +435,47 @@ a:focus {
     to { transform: translateX(0); opacity: 1; }
 }
 
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 .fade-in {
     animation: fadeIn 0.5s ease forwards;
 }
 
 .slide-in {
     animation: slideIn 0.5s ease forwards;
+}
+
+/* Upload Progress Styles */
+.spin {
+    display: inline-block;
+    animation: spin 1.5s linear infinite;
+}
+
+.progress-step {
+    transition: all 0.4s ease;
+}
+
+.progress-step.active {
+    opacity: 1;
+}
+
+.progress-step.completed .step-icon {
+    color: var(--bs-success) !important;
+}
+
+.progress-step.completed .progress-bar {
+    background-color: var(--bs-success) !important;
+}
+
+.progress-step.active .step-icon {
+    color: var(--bs-primary) !important;
+}
+
+.progress-step.active .progress-bar {
+    background-color: var(--bs-primary) !important;
 }
 
 /* Transition Effects */
