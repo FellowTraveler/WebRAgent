@@ -14,6 +14,9 @@ logger = logging.getLogger(__name__)
 class ModelService:
     """Service for managing LLM and embedding models"""
     
+    # Class variable for singleton instance
+    _instance = None
+    
     # Initial configuration structure for new installations
     INITIAL_CONFIG = {
         "providers": {
@@ -34,8 +37,19 @@ class ModelService:
         }
     }
     
+    def __new__(cls):
+        """Implement singleton pattern"""
+        if cls._instance is None:
+            cls._instance = super(ModelService, cls).__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+    
     def __init__(self):
-        """Initialize model service and load available models"""
+        """Initialize model service and load available models (only once)"""
+        # Skip initialization if already done
+        if hasattr(self, '_initialized') and self._initialized:
+            return
+            
         self.config_path = Path('data/models/config.json')
         self.config_dir = self.config_path.parent
         
@@ -51,6 +65,9 @@ class ModelService:
         
         # Save updated config
         self._save_config()
+        
+        # Mark as initialized
+        self._initialized = True
     
     def _load_config(self):
         """Load configuration from file or initialize with empty structure"""
@@ -563,3 +580,25 @@ class ModelService:
         # We no longer set environment variables here
         # All services should directly access the JSON config instead
         pass
+        
+    def refresh_models(self, force=False):
+        """
+        Explicitly refresh available models from providers
+        
+        Args:
+            force (bool): Force refresh even if already initialized
+            
+        Returns:
+            bool: True if refresh was performed
+        """
+        # Skip if not forcing and already initialized
+        if not force and hasattr(self, '_initialized') and self._initialized:
+            return False
+            
+        # Update with available models from providers
+        self._update_available_models()
+        
+        # Save updated config
+        self._save_config()
+        
+        return True
