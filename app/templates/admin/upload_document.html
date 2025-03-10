@@ -27,7 +27,7 @@
                     <li><strong>Images:</strong> JPG, PNG, TIFF (with OCR)</li>
                 </ul>
                 
-                <form method="POST" action="{{ url_for('admin.upload_document', collection_id=collection.id) }}" enctype="multipart/form-data">
+                <form id="upload-form" method="POST" action="{{ url_for('admin.upload_document', collection_id=collection.id) }}" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label for="title" class="form-label">Common Document Title Prefix (Optional)</label>
                         <input type="text" class="form-control" id="title" name="title" placeholder="Enter a common prefix for the documents">
@@ -78,8 +78,110 @@
                         </div>
                     </div>
                     
+                    <!-- Upload Progress Indicators (Initially Hidden) -->
+                    <div id="upload-progress" class="mb-4" style="display: none;">
+                        <div class="card p-3">
+                            <h5 class="card-title mb-3"><i class="bi bi-arrow-clockwise me-2 spin"></i>Processing Documents</h5>
+                            
+                            <!-- Upload Step -->
+                            <div id="step-upload" class="progress-step mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="step-icon me-3 text-primary">
+                                        <i class="bi bi-cloud-arrow-up-fill fs-4"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-0 fw-bold">Uploading Files</h6>
+                                        <p class="mb-0 text-muted small">Transferring document(s) to the server...</p>
+                                    </div>
+                                    <div class="step-status">
+                                        <span class="badge bg-primary"><i class="bi bi-hourglass-split me-1"></i>In Progress</span>
+                                    </div>
+                                </div>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 100%"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Text Extraction Step -->
+                            <div id="step-extraction" class="progress-step mb-3" style="opacity: 0.5;">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="step-icon me-3 text-secondary">
+                                        <i class="bi bi-file-earmark-text fs-4"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-0 fw-bold">Extracting Text</h6>
+                                        <p class="mb-0 text-muted small">Parsing document content and extracting text...</p>
+                                    </div>
+                                    <div class="step-status">
+                                        <span class="badge bg-secondary"><i class="bi bi-clock me-1"></i>Pending</span>
+                                    </div>
+                                </div>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar bg-secondary" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Chunking Step -->
+                            <div id="step-chunking" class="progress-step mb-3" style="opacity: 0.5;">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="step-icon me-3 text-secondary">
+                                        <i class="bi bi-scissors fs-4"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-0 fw-bold">Chunking Content</h6>
+                                        <p class="mb-0 text-muted small">Dividing text into optimized chunks with overlap...</p>
+                                    </div>
+                                    <div class="step-status">
+                                        <span class="badge bg-secondary"><i class="bi bi-clock me-1"></i>Pending</span>
+                                    </div>
+                                </div>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar bg-secondary" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Embedding Step -->
+                            <div id="step-embedding" class="progress-step mb-3" style="opacity: 0.5;">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="step-icon me-3 text-secondary">
+                                        <i class="bi bi-cpu fs-4"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-0 fw-bold">Generating Embeddings</h6>
+                                        <p class="mb-0 text-muted small">Creating vector embeddings for each chunk...</p>
+                                    </div>
+                                    <div class="step-status">
+                                        <span class="badge bg-secondary"><i class="bi bi-clock me-1"></i>Pending</span>
+                                    </div>
+                                </div>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar bg-secondary" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Storage Step -->
+                            <div id="step-storage" class="progress-step" style="opacity: 0.5;">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="step-icon me-3 text-secondary">
+                                        <i class="bi bi-database-fill fs-4"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-0 fw-bold">Storing in Database</h6>
+                                        <p class="mb-0 text-muted small">Saving document and embeddings to the collection...</p>
+                                    </div>
+                                    <div class="step-status">
+                                        <span class="badge bg-secondary"><i class="bi bi-clock me-1"></i>Pending</span>
+                                    </div>
+                                </div>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar bg-secondary" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">Upload & Process</button>
+                        <button id="submit-btn" type="submit" class="btn btn-primary">Upload & Process</button>
                         <a href="{{ url_for('admin.collection_detail', collection_id=collection.id) }}" class="btn btn-outline-secondary">Cancel</a>
                     </div>
                 </form>
@@ -129,4 +231,109 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadForm = document.getElementById('upload-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const uploadProgress = document.getElementById('upload-progress');
+    
+    // Progress steps
+    const steps = [
+        {id: 'step-upload', message: 'Uploading files to server...'},
+        {id: 'step-extraction', message: 'Extracting text from documents...'},
+        {id: 'step-chunking', message: 'Chunking content into segments...'},
+        {id: 'step-embedding', message: 'Generating vector embeddings...'},
+        {id: 'step-storage', message: 'Storing data in collection...'}
+    ];
+    
+    // Track the current active step
+    let currentStep = 0;
+    let processingStarted = false;
+    
+    // Function to update the progress UI
+    function updateProgressUI() {
+        // Reset all steps to inactive
+        steps.forEach((step, index) => {
+            const stepEl = document.getElementById(step.id);
+            const progressBar = stepEl.querySelector('.progress-bar');
+            const statusBadge = stepEl.querySelector('.step-status span');
+            const stepIcon = stepEl.querySelector('.step-icon');
+            
+            // Reset styling
+            stepEl.classList.remove('active', 'completed');
+            stepEl.style.opacity = '0.5';
+            progressBar.style.width = '0%';
+            progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated', 'bg-primary', 'bg-success');
+            progressBar.classList.add('bg-secondary');
+            
+            // Update status based on step position
+            if (index < currentStep) {
+                // Completed step
+                stepEl.classList.add('completed');
+                stepEl.style.opacity = '1';
+                progressBar.style.width = '100%';
+                progressBar.classList.add('bg-success');
+                statusBadge.className = 'badge bg-success';
+                statusBadge.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Completed';
+            } else if (index === currentStep) {
+                // Current step
+                stepEl.classList.add('active');
+                stepEl.style.opacity = '1';
+                progressBar.style.width = '100%';
+                progressBar.classList.add('bg-primary', 'progress-bar-striped', 'progress-bar-animated');
+                statusBadge.className = 'badge bg-primary';
+                statusBadge.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>In Progress';
+                stepIcon.className = stepIcon.className.replace('text-secondary', 'text-primary');
+            } else {
+                // Pending step
+                statusBadge.className = 'badge bg-secondary';
+                statusBadge.innerHTML = '<i class="bi bi-clock me-1"></i>Pending';
+            }
+        });
+    }
+    
+    // Function to advance to the next step
+    function advanceStep() {
+        if (currentStep < steps.length - 1) {
+            currentStep++;
+            updateProgressUI();
+        } else {
+            // We're done with all steps, but form is still submitting
+            // Keep the UI showing the last step as active
+        }
+    }
+    
+    // When the form is submitted, show the progress UI
+    uploadForm.addEventListener('submit', function(e) {
+        // Don't prevent form submission - we want the form to actually submit
+        // We're just adding visual feedback during the submission
+        
+        if (!processingStarted) {
+            processingStarted = true;
+            
+            // Show the progress container and disable the submit button
+            uploadProgress.style.display = 'block';
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-arrow-repeat spin me-2"></i>Processing...';
+            
+            // Initialize the UI
+            currentStep = 0;
+            updateProgressUI();
+            
+            // Simulate progress through the steps
+            // This is fake progress, but gives users a sense of what's happening
+            setTimeout(() => advanceStep(), 1500);  // Move to extraction after 1.5s
+            setTimeout(() => advanceStep(), 4000);  // Move to chunking after 4s
+            setTimeout(() => advanceStep(), 7000);  // Move to embedding after 7s
+            setTimeout(() => advanceStep(), 10000); // Move to storage after 10s
+            
+            // Note: the form will submit and page will refresh when done,
+            // so we don't need to handle the completion state
+        }
+    });
+});
+</script>
 {% endblock %}
