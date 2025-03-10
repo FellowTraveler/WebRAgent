@@ -1,9 +1,11 @@
 import os
 import json
 import requests
+from pathlib import Path
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from sentence_transformers import SentenceTransformer
+from app.services.model_service import ModelService
 
 class QdrantService:
     """Service for interacting with Qdrant vector database"""
@@ -20,21 +22,26 @@ class QdrantService:
         # Load known dimensions from config file
         self._load_model_dimensions()
         
-        # Initialize embedding model based on LLM provider
-        self.llm_provider = os.getenv('LLM_PROVIDER', 'openai').lower()
+        # Load model configuration from JSON config
+        self.model_service = ModelService()
+        self.config = self.model_service.config
+        
+        # Initialize embedding model based on active configuration
+        self.active_config = self.config["active"]
+        self.llm_provider = self.active_config["llm_provider"]
         self.vector_size = 384  # Default for sentence-transformers
         
         if self.llm_provider == 'openai':
             self.openai_api_key = os.getenv('OPENAI_API_KEY')
-            openai_model = os.getenv('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small')
+            openai_model = self.active_config["models"]["openai_embedding"] or 'text-embedding-3-small'
             self.vector_size = self.get_vector_size('openai', openai_model)
         elif self.llm_provider == 'ollama':
             self.ollama_host = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
-            self.ollama_model = os.getenv('OLLAMA_EMBEDDING_MODEL', 'nomic-embed-text')
+            self.ollama_model = self.active_config["models"]["ollama_embedding"] or 'nomic-embed-text'
             self.vector_size = self.get_vector_size('ollama', self.ollama_model)
         else:
             # For Claude or fallback to sentence-transformers
-            model_name = os.getenv('EMBEDDING_MODEL', 'all-MiniLM-L6-v2')
+            model_name = self.active_config["models"]["embedding"] or 'all-MiniLM-L6-v2'
             self.embedding_model = SentenceTransformer(model_name)
             self.embedding_model_name = model_name
             self.vector_size = self.get_vector_size('embedding', model_name)
@@ -81,7 +88,16 @@ class QdrantService:
         # Ollama embeddings
         elif provider == 'ollama':
             try:
-                embedding_model = model or self.ollama_model
+                # Use model from parameters, instance variable, or get from JSON config
+                if model:
+                    embedding_model = model
+                elif hasattr(self, 'ollama_model'):
+                    embedding_model = self.ollama_model
+                elif hasattr(self, 'active_config') and self.active_config["models"]["ollama_embedding"]:
+                    embedding_model = self.active_config["models"]["ollama_embedding"]
+                else:
+                    embedding_model = 'nomic-embed-text'
+                    
                 response = requests.post(
                     f"{self.ollama_host}/api/embeddings",
                     json={
@@ -105,8 +121,17 @@ class QdrantService:
             # Fix model name by removing tags like ":latest"
             if model and ":" in model:
                 model = model.split(":")[0]
+            
+            # Use model from parameters, instance variable, or get from JSON config
+            if model:
+                embedding_model = model
+            elif hasattr(self, 'embedding_model_name'):
+                embedding_model = self.embedding_model_name
+            elif hasattr(self, 'active_config') and self.active_config["models"]["embedding"]:
+                embedding_model = self.active_config["models"]["embedding"]
+            else:
+                embedding_model = 'all-MiniLM-L6-v2'
                 
-            embedding_model = model or 'all-MiniLM-L6-v2'
             try:
                 if not hasattr(self, 'embedding_model') or self.embedding_model_name != embedding_model:
                     self.embedding_model = SentenceTransformer(embedding_model)
@@ -269,7 +294,12 @@ class QdrantService:
         # Initialize Ollama attributes if needed
         elif provider == 'ollama' and not hasattr(self, 'ollama_host'):
             self.ollama_host = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
-            self.ollama_model = os.getenv('OLLAMA_EMBEDDING_MODEL', 'nomic-embed-text')
+            
+            # Use the model from JSON config file instead of environment variable
+            if hasattr(self, 'active_config') and self.active_config["models"]["ollama_embedding"]:
+                self.ollama_model = self.active_config["models"]["ollama_embedding"]
+            else:
+                self.ollama_model = 'nomic-embed-text'
     
     def create_collection(self, collection_name, vector_size=None, provider=None, model=None):
         """

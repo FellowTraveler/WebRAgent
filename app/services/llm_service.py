@@ -163,7 +163,14 @@ class LLMFactory:
         Returns:
             LLMService: An instance of the configured LLM service
         """
-        provider = os.getenv('LLM_PROVIDER', 'openai').lower()
+        # Load from model service configuration
+        from app.services.model_service import ModelService
+        model_service = ModelService()
+        provider = model_service.config["active"]["llm_provider"].lower()
+        
+        if not provider:
+            # Fallback to default if no provider configured
+            provider = "openai"
         
         if provider == 'openai':
             from app.services.openai_service import OpenAIService

@@ -1,17 +1,29 @@
 import os
 from anthropic import Anthropic
 from app.services.llm_service import LLMService
+from app.services.model_service import ModelService
 
 class ClaudeService(LLMService):
     """Service for interacting with Anthropic's Claude API"""
     
     def __init__(self):
         """Initialize the Anthropic client"""
+        # Get API key from environment variable
         api_key = os.getenv('CLAUDE_API_KEY')
         if not api_key:
             raise ValueError("CLAUDE_API_KEY not found in environment variables")
         self.client = Anthropic(api_key=api_key)
-        self.model = os.getenv('CLAUDE_MODEL', 'claude-3-sonnet-20240229')
+        
+        # Load configuration from the model service
+        self.model_service = ModelService()
+        self.config = self.model_service.config
+        
+        # Get model from JSON config instead of environment variable
+        if self.config["active"]["models"]["claude_llm"]:
+            self.model = self.config["active"]["models"]["claude_llm"]
+        else:
+            # Fallback to a default model
+            self.model = 'claude-3-sonnet-20240229'
     
     def _generate_completion(self, system_message, user_message, max_tokens):
         """

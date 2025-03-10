@@ -326,6 +326,18 @@ def models():
         providers=providers, 
         active_config=active_config
     )
+    
+@admin_bp.route('/api/models/refresh', methods=['POST'])
+@admin_required
+def api_refresh_models():
+    """API endpoint to refresh models from providers"""
+    model_service = ModelService()
+    try:
+        # Force refresh of all models
+        model_service.refresh_models(force=True)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @admin_bp.route('/api/models/providers')
 @admin_required

@@ -14,6 +14,9 @@ logger = logging.getLogger(__name__)
 class ModelService:
     """Service for managing LLM and embedding models"""
     
+    # Class variable for singleton instance
+    _instance = None
+    
     # Initial configuration structure for new installations
     INITIAL_CONFIG = {
         "providers": {
@@ -34,8 +37,19 @@ class ModelService:
         }
     }
     
+    def __new__(cls):
+        """Implement singleton pattern"""
+        if cls._instance is None:
+            cls._instance = super(ModelService, cls).__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+    
     def __init__(self):
-        """Initialize model service and load available models"""
+        """Initialize model service and load available models (only once)"""
+        # Skip initialization if already done
+        if hasattr(self, '_initialized') and self._initialized:
+            return
+            
         self.config_path = Path('data/models/config.json')
         self.config_dir = self.config_path.parent
         
@@ -51,6 +65,9 @@ class ModelService:
         
         # Save updated config
         self._save_config()
+        
+        # Mark as initialized
+        self._initialized = True
     
     def _load_config(self):
         """Load configuration from file or initialize with empty structure"""
@@ -250,37 +267,43 @@ class ModelService:
             logger.warning(f"Could not fetch OpenAI models: {e}")
     
     def _update_claude_models(self):
-        """Update available Claude models"""
+        """Update available Claude models from Anthropic API"""
         try:
             client = Anthropic(api_key=os.getenv('CLAUDE_API_KEY'))
             
-            # Claude API doesn't provide a model list endpoint, so we add known models
-            # We'll keep any existing models to maintain defaults and add new ones
+            # Get current models to maintain defaults
             current_models = self.config["providers"]["claude"]["models"]
-            current_model_ids = [model["id"] for model in current_models]
             
-            # List of known Claude models - this list can be updated as new models are released
-            known_models = [
-                {"id": "claude-3-opus-20240229", "name": "Claude 3 Opus", "type": "llm"},
-                {"id": "claude-3-sonnet-20240229", "name": "Claude 3 Sonnet", "type": "llm"},
-                {"id": "claude-3-haiku-20240307", "name": "Claude 3 Haiku", "type": "llm"},
-                # Add any new models here
-            ]
+            # Fetch models from the API
+            response = client.models.list(limit=20)
             
-            # Add any new models not already in the list
-            for model in known_models:
-                if model["id"] not in current_model_ids:
-                    current_models.append(model)
+            # Process models from API
+            new_models = []
+            for model in response.data:
+                model_data = {
+                    "id": model.id,
+                    "name": model.display_name if hasattr(model, 'display_name') and model.display_name else model.id,
+                    "type": "llm"
+                }
+                
+                # Preserve default setting if model already exists
+                for existing_model in current_models:
+                    if existing_model["id"] == model.id:
+                        model_data["default"] = existing_model.get("default", False)
+                        break
+                
+                new_models.append(model_data)
             
             # Set the first model as default if no default exists
-            if not any(model.get("default") for model in current_models) and current_models:
-                current_models[0]["default"] = True
+            if not any(model.get("default") for model in new_models) and new_models:
+                new_models[0]["default"] = True
                 
             # Update the config
-            self.config["providers"]["claude"]["models"] = current_models
+            self.config["providers"]["claude"]["models"] = new_models
             
         except Exception as e:
-            logger.warning(f"Error updating Claude models: {e}")
+            logger.error(f"Error updating Claude models: {e}")
+            raise
     
     def _update_ollama_models(self):
         """Update available Ollama models"""
@@ -548,30 +571,34 @@ class ModelService:
         return True
     
     def _update_environment_variables(self):
-        """Update environment variables to reflect current configuration"""
-        # Set LLM provider if available
-        if self.config["active"]["llm_provider"]:
-            os.environ["LLM_PROVIDER"] = self.config["active"]["llm_provider"]
+        """
+        This method previously updated environment variables with the configuration.
         
-        # Set model-specific variables based on configured provider and models
-        if self.config["active"]["llm_provider"] == "openai" and 'openai' in self.config["providers"]:
-            if self.config["active"]["models"]["openai_llm"]:
-                os.environ["OPENAI_MODEL"] = self.config["active"]["models"]["openai_llm"]
+        Now it's a no-op since we're using direct JSON config access instead of environment variables.
+        Kept for backward compatibility.
+        """
+        # We no longer set environment variables here
+        # All services should directly access the JSON config instead
+        pass
+        
+    def refresh_models(self, force=False):
+        """
+        Explicitly refresh available models from providers
+        
+        Args:
+            force (bool): Force refresh even if already initialized
             
-            if self.config["active"]["models"]["openai_embedding"]:
-                os.environ["OPENAI_EMBEDDING_MODEL"] = self.config["active"]["models"]["openai_embedding"]
-                
-        elif self.config["active"]["llm_provider"] == "claude" and 'claude' in self.config["providers"]:
-            if self.config["active"]["models"]["claude_llm"]:
-                os.environ["CLAUDE_MODEL"] = self.config["active"]["models"]["claude_llm"]
-                
-        elif self.config["active"]["llm_provider"] == "ollama" and 'ollama' in self.config["providers"]:
-            if self.config["active"]["models"]["ollama_llm"]:
-                os.environ["OLLAMA_MODEL"] = self.config["active"]["models"]["ollama_llm"]
-                
-            if self.config["active"]["models"]["ollama_embedding"]:
-                os.environ["OLLAMA_EMBEDDING_MODEL"] = self.config["active"]["models"]["ollama_embedding"]
+        Returns:
+            bool: True if refresh was performed
+        """
+        # Skip if not forcing and already initialized
+        if not force and hasattr(self, '_initialized') and self._initialized:
+            return False
+            
+        # Update with available models from providers
+        self._update_available_models()
         
-        # Set embedding model
-        if self.config["active"]["models"]["embedding"]:
-            os.environ["EMBEDDING_MODEL"] = self.config["active"]["models"]["embedding"]
+        # Save updated config
+        self._save_config()
+        
+        return True

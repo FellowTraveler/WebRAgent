@@ -200,6 +200,9 @@
     <div class="card shadow-sm">
         <div class="card-header-custom">
             <h2 class="h5 mb-0 fw-bold"><i class="bi bi-gear-wide-connected me-2"></i>Available Models</h2>
+            <button id="refresh-models-btn" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-arrow-clockwise me-1"></i>Refresh Models
+            </button>
         </div>
         <div class="card-body">
             <ul class="nav nav-tabs" id="modelsTab" role="tablist">
@@ -589,6 +592,58 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('An error occurred while setting the provider.');
         });
     }
+    
+    // Handle refresh models button
+    document.getElementById('refresh-models-btn').addEventListener('click', function() {
+        const button = this;
+        const originalText = button.innerHTML;
+        
+        // Show loading state
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Refreshing...';
+        
+        // Make API request to refresh models
+        fetch('/admin/api/models/refresh', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Reset button state
+            button.disabled = false;
+            button.innerHTML = originalText;
+            
+            if (data.success) {
+                // Reload the current tab's models
+                const activeTab = document.querySelector('.nav-link.active');
+                if (activeTab) {
+                    const provider = activeTab.id.replace('-tab', '');
+                    loadModels(provider, 'llm');
+                    if (provider !== 'claude') {
+                        loadModels(provider, 'embedding');
+                    }
+                }
+                
+                // Show success toast with custom message
+                const toastBody = document.querySelector('#successToast .toast-body');
+                toastBody.textContent = 'Models refreshed successfully!';
+                const toast = new bootstrap.Toast(document.getElementById('successToast'));
+                toast.show();
+            } else {
+                alert(`Error refreshing models: ${data.error || 'Unknown error'}`);
+            }
+        })
+        .catch(error => {
+            // Reset button state
+            button.disabled = false;
+            button.innerHTML = originalText;
+            
+            console.error('Error refreshing models:', error);
+            alert('An error occurred while refreshing models.');
+        });
+    });
 });
 </script>
 {% endblock %}
