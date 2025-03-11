@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2025-03-11
+
+### Added
+🚑 Fixes
+
+Updated model type logic in ModelService to detect 'bge' within model names for embedding detection. (#6)
+
+🚀 Improvements
+
+Created centralized PromptTemplateService for maintaining and updating prompts more efficiently. (#5)
+
+Enhanced source citation standards, requiring explicit, standardized citations for document references and web URLs.
+
+Implemented specialized agent personas (decomposer, synthesizer, web analyzer) to boost task specificity and output quality.
+
+Improved context handling with a formatter that prioritizes relevant information, manages truncation effectively, and integrates confidence scores.
+
+Standardized response formatting across various output types for consistency.
+
+Added query intent analysis to better handle query structures and intent before response generation.
+
+Enhanced error handling with clear instructions for insufficient or ambiguous contexts.
+
+Comprehensive documentation added, including a detailed README for prompt systems and best practices.
+
 ## [1.0.1] - 2025-03-10
 
 ### Added
