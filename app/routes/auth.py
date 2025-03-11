@@ -1,4 +1,6 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, session
+import os
+import random
+from flask import Blueprint, render_template, redirect, url_for, flash, request, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from app.models.user import User
 
@@ -30,7 +32,23 @@ def login():
         else:
             flash('Invalid username or password', 'error')
     
-    return render_template('auth/login.html')
+    # Get random background image if enabled
+    background_image = None
+    if current_app.config.get('LOGIN_USE_BACKGROUND_IMAGES', False):
+        bg_dir = os.path.join(current_app.static_folder, 'images', 'backgrounds')
+        if os.path.isdir(bg_dir):
+            # List all image files (jpg, jpeg, png, webp)
+            image_extensions = ('.jpg', '.jpeg', '.png', '.webp')
+            images = [f for f in os.listdir(bg_dir) 
+                     if os.path.isfile(os.path.join(bg_dir, f)) and 
+                     f.lower().endswith(image_extensions)]
+            
+            if images:
+                # Select a random image
+                random_image = random.choice(images)
+                background_image = f'images/backgrounds/{random_image}'
+    
+    return render_template('auth/login.html', background_image=background_image)
 
 @auth_bp.route('/logout')
 @login_required
