@@ -2,6 +2,7 @@ import os
 import re
 from textwrap import dedent
 from app.services.llm_service import LLMFactory
+from app.services.prompt_template_service import PromptTemplateService
 
 class MindmapService:
     """Service for generating mindmaps from user queries and context"""
