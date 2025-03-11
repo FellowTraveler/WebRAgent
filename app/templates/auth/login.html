@@ -22,10 +22,8 @@
         background-position: center;
         background-repeat: no-repeat;
         z-index: -1;
-        {% if config.get('LOGIN_BACKGROUND_URL') %}
-        background-image: url({{ config.get("LOGIN_BACKGROUND_URL") }});
-        {% elif config.get('LOGIN_BACKGROUND_PATH') %}
-        background-image: url('{{ url_for("static", filename=config.get("LOGIN_BACKGROUND_PATH")) }}');
+        {% if background_image %}
+        background-image: url('{{ url_for("static", filename=background_image) }}');
         {% else %}
         background: linear-gradient(135deg, #3a7bd5 0%, #3a6073 100%);
         {% endif %}

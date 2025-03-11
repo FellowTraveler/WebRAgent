@@ -12,8 +12,7 @@ def create_app():
     app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'default-dev-key')
     
     # Login page background configuration
-    app.config['LOGIN_BACKGROUND_URL'] = os.getenv('LOGIN_BACKGROUND_URL', '')
-    app.config['LOGIN_BACKGROUND_PATH'] = os.getenv('LOGIN_BACKGROUND_PATH', '')
+    app.config['LOGIN_USE_BACKGROUND_IMAGES'] = os.getenv('LOGIN_USE_BACKGROUND_IMAGES', 'true').lower() == 'true'
     
     # Initialize Flask-Login
     login_manager = LoginManager()
