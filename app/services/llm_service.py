@@ -4,7 +4,8 @@ from abc import ABC, abstractmethod
 class LLMService(ABC):
     """Base class for LLM service providers"""
     
-    # Standard system messages that can be reused across providers
+    # These standard messages are now managed in the PromptTemplateService
+    # but kept here for backward compatibility
     RAG_SYSTEM_MESSAGE = (
         "You are a helpful and knowledgeable assistant. "
         "When answering the user's question, always review the context provided below. "

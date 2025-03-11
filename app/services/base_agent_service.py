@@ -1,5 +1,6 @@
 import re
 import logging
+from app.services.prompt_template_service import PromptTemplateService
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -47,36 +48,16 @@ class BaseAgentService:
         Returns:
             list: List of subqueries
         """
-        # Build the appropriate prompt based on whether it's web search or not
-        if is_web_search:
-            decompose_prompt = f"""
-            You are an expert at breaking down complex questions into effective web search queries.
-            
-            Original Query: {query}
-            
-            Please break this query down into 2-4 specific, focused search queries that together will help answer the original question completely.
-            Each search query should:
-            1. Be phrased to maximize relevant search engine results
-            2. Focus on a particular aspect of the original query
-            3. Use search engine-friendly syntax (short, precise terms without unnecessary words)
-            4. Avoid complex language that would reduce search effectiveness
-            
-            Format your response as a bulleted list with ONLY the search queries, nothing else.
-            """
-        else:
-            decompose_prompt = f"""
-            You are an expert at breaking down complex questions into simpler, more focused subqueries.
-            
-            Original Query: {query}
-            
-            Please break this query down into 2-4 specific, focused subqueries that together will help answer the original question completely.
-            Each subquery should:
-            1. Be self-contained and specific
-            2. Focus on a particular aspect of the original query
-            3. Be phrased as a complete question
-            
-            Format your response as a bulleted list with ONLY the subqueries, nothing else.
-            """
+        # Get the appropriate prompt using the PromptTemplateService
+        decompose_type = "web_search" if is_web_search else "document_search"
+        role_type = "web_searcher" if is_web_search else "decomposer"
+        
+        decompose_prompt = PromptTemplateService.get_decomposition_prompt(
+            query=query,
+            type=decompose_type,
+            role=PromptTemplateService.get_role(role_type),
+            format_instructions=PromptTemplateService.get_format_instructions("bullet_list_queries")
+        )
         
         # Generate the decomposition
         response = self.llm_service.generate_response(
@@ -108,50 +89,33 @@ class BaseAgentService:
         Returns:
             list: List of subqueries
         """
-        # Format contexts for the decomposition prompt
-        formatted_contexts = ""
-        for i, context in enumerate(initial_contexts[:3]):  # Limit to first 3 contexts
-            formatted_contexts += f"Context {i+1}: {context.get('content', '')}\n"
-            formatted_contexts += f"Source: {context.get('document_title', 'Unknown')}\n\n"
+        # Format contexts for the decomposition prompt using efficient context formatter
+        formatted_contexts = PromptTemplateService.format_context(initial_contexts[:3], max_length=2000)
         
-        # Build the appropriate prompt based on whether it's web search or not
+        # Set up parameters for the informed decomposition prompt
         search_type = "web search" if is_web_search else "search"
         query_type = "search queries" if is_web_search else "questions"
+        role_type = "web_searcher" if is_web_search else "decomposer"
         
-        decompose_prompt = f"""
-        You are an expert at breaking down complex questions into effective {query_type}.
-        
-        Original Query: {query}
-        
-        I've already done an initial {search_type} and found some information, but we need to explore further:
-        
-        Initial Results: 
-        {formatted_contexts}
-        
-        Based on what we've found so far, please identify 2-3 specific, focused follow-up {query_type} that would help us:
-        1. Fill in important missing information not covered in the initial search
-        2. Explore specific aspects of the query that weren't fully addressed
-        3. Resolve any ambiguities or contradictions in the initial results
-        
-        Each query should:
-        - Be focused on gathering new information not already covered
-        - NOT duplicate information we already have from the initial search
-        """
-        
-        if is_web_search:
-            decompose_prompt += """
+        # Set up specific instructions based on search type
+        specific_instructions = """
         - Be phrased to maximize relevant search engine results
         - Use search engine-friendly syntax (short, precise terms without unnecessary words)
-            """
-        else:
-            decompose_prompt += """
+        """ if is_web_search else """
         - Be self-contained and specific
         - Be phrased as a complete question
-            """
-        
-        decompose_prompt += """
-        Format your response as a bulleted list with ONLY the queries, nothing else.
         """
+        
+        # Get the prompt from the template service
+        decompose_prompt = PromptTemplateService.DECOMPOSITION["informed_decomposition"].format(
+            role=PromptTemplateService.get_role(role_type),
+            query=query,
+            search_type=search_type,
+            context=formatted_contexts,
+            query_type=query_type,
+            specific_instructions=specific_instructions,
+            format_instructions=PromptTemplateService.get_format_instructions("bullet_list_queries")
+        )
         
         # Generate the decomposition
         response = self.llm_service.generate_response(
@@ -198,39 +162,13 @@ class BaseAgentService:
             formatted_results += f"{query_type} {i+1}: {result['subquery']}\n"
             formatted_results += f"Results: {result['answer']}\n\n"
         
-        # Create synthesis prompt
-        synthesis_prompt = f"""
-        You are tasked with synthesizing a comprehensive answer to a complex query based on search results.
-        
-        Original Query: {original_query}
-        
-        I've broken this query down and found results for each part:
-        
-        {formatted_results}
-        
-        Please synthesize a comprehensive, cohesive answer to the original query that:
-        1. Directly addresses the original question
-        2. Integrates information from all results
-        3. Presents a logical flow of information
-        4. Avoids unnecessary repetition
-        5. Maintains factual accuracy from the source information
-        """
-        
-        if is_web_search:
-            synthesis_prompt += """
-        6. Includes proper citations to web sources including URLs in parentheses
-        7. Notes any conflicting information found and provides a balanced perspective
-        
-        Your answer should be thorough but concise, well-structured, and directly useful to the person who asked the original query.
-        Be careful to only include factual information from the search results, and acknowledge any significant information gaps.
-        """
-        else:
-            synthesis_prompt += """
-        6. Citing references to the source documents where applicable with all relevant document_title.
-        7. If the results do not contain sufficient or relevant details, don't answer and state there is no relevant context.
-        
-        Your answer should be thorough but concise, well-structured, and directly useful to the person who asked the original query.
-        """
+        # Use the template service for synthesis prompt
+        synthesis_prompt = PromptTemplateService.get_synthesis_prompt(
+            query=original_query,
+            results=formatted_results,
+            is_web_search=is_web_search,
+            role=PromptTemplateService.get_role("synthesizer")
+        )
         
         # Generate synthesized response
         synthesized_answer = self.llm_service.generate_response(
