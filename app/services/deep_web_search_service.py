@@ -6,6 +6,7 @@ from app.services.searxng_service import SearXNGService
 from app.services.web_scraper_service import WebScraperService
 from app.services.llm_service import LLMFactory
 from app.services.base_agent_service import BaseAgentService
+from app.services.prompt_template_service import PromptTemplateService
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -207,20 +208,11 @@ class DeepWebSearchService(BaseAgentService):
             sources_content += f"URL: {content['url']}\n"
             sources_content += f"{content['analysis']}\n\n"
         
-        # Create prompt
-        subquery_analysis_prompt = f"""
-        Based on the following web content analyses for the query: "{subquery}",
-        please provide a concise, focused answer that specifically addresses this query.
-        
-        Analyzed web content:
-        {sources_content}
-        
-        Your response should:
-        1. Focus specifically on answering "{subquery}"
-        2. Integrate information from all relevant sources
-        3. Be concise but complete
-        4. Cite sources where appropriate
-        """
+        # Use the specialized subquery analysis template
+        subquery_analysis_prompt = PromptTemplateService.SPECIALIZED["subquery_analysis"].format(
+            query=subquery,
+            sources_content=sources_content
+        )
         
         # Generate subquery-specific response
         try:
@@ -280,23 +272,14 @@ class DeepWebSearchService(BaseAgentService):
         analyzed_contents = []
         
         for content in scraped_contents:
-            # Generate a concise summary and key points from the full content
-            analysis_prompt = f"""
-            Please analyze the following web page content and extract the key information relevant to the query: "{query}"
-            
-            Web Page: {content['title']}
-            URL: {content['url']}
-            
-            Content:
-            {content['content']}
-            
-            Please provide:
-            1. A concise summary of the content (2-3 sentences)
-            2. 3-5 key facts or points that are most relevant to the query
-            3. An assessment of how well this content answers the query (high, medium, low)
-            
-            Format your response with clear sections. Only include information present in the content.
-            """
+            # Generate a concise summary and key points from the full content using improved template
+            analysis_prompt = PromptTemplateService.WEB_ANALYSIS["content_analysis"].format(
+                role=PromptTemplateService.get_role("web_analyzer"),
+                query=query,
+                title=content['title'],
+                url=content['url'],
+                content=content['content']
+            )
             
             try:
                 analysis = self.llm_service.generate_response(
@@ -353,30 +336,19 @@ class DeepWebSearchService(BaseAgentService):
         
         # Step 6: Use LLM to synthesize a comprehensive response from all analyzed contents
         if analyzed_contents:
-            # Prepare sources content separately to avoid complex f-string
-            sources_content = ""
+            # Format the results in the structure expected by the synthesis template
+            formatted_results = ""
             for i, content in enumerate(analyzed_contents):
-                sources_content += f"--- Source {i+1}: {content['title']} ---\n"
-                sources_content += f"URL: {content['url']}\n"
-                sources_content += f"{content['analysis']}\n\n"
+                formatted_results += f"Web Source {i+1}: {content['title']} ({content['url']})\n"
+                formatted_results += f"Analysis: {content['analysis']}\n\n"
             
-            synthesis_prompt = f"""
-            Based on the deep web search results for the query: "{query}", provide a comprehensive answer.
-            
-            I've scraped and analyzed multiple web pages. Here are the detailed analyses:
-            
-            {sources_content}
-            
-            Please synthesize a comprehensive answer that:
-            1. Directly addresses the original query: "{query}"
-            2. Integrates key information from all sources
-            3. Presents information in a logical, well-structured manner
-            4. Cites sources appropriately (with URLs in parentheses)
-            5. Notes any conflicting information and provides a balanced view
-            6. Acknowledges if certain aspects of the query remain unanswered
-            
-            Your answer should be thorough, accurate, and directly useful to someone asking this query.
-            """
+            # Use the synthesis template from the prompt service
+            synthesis_prompt = PromptTemplateService.get_synthesis_prompt(
+                query=query,
+                results=formatted_results,
+                is_web_search=True,
+                role=PromptTemplateService.get_role("synthesizer")
+            )
             
             try:
                 response = self.llm_service.generate_response(

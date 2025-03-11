@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime
 from pymongo import MongoClient
 from bson.objectid import ObjectId
+from app.services.prompt_template_service import PromptTemplateService
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -351,13 +352,10 @@ class ChatService:
         if not user_message:
             return None
             
-        # Use LLM to generate a concise title
-        prompt = f"""
-        Generate a very short title (3-5 words max) for a conversation that starts with this message:
-        "{user_message}"
-        
-        Your response should ONLY include the short title, nothing else.
-        """
+        # Use the template service for title generation
+        prompt = PromptTemplateService.TITLE_GENERATION["chat_title"].format(
+            message=user_message
+        )
         
         try:
             title = llm_service.generate_response(

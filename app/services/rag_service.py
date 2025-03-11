@@ -1,5 +1,6 @@
 from app.services.llm_service import LLMFactory
 from app.services.document_service import DocumentService
+from app.services.prompt_template_service import PromptTemplateService
 
 class RAGService:
     """Retrieval-Augmented Generation service"""
@@ -42,20 +43,16 @@ class RAGService:
                 'page_number': result.get('page_number', 1)
             })
         
-        # Format document context for LLM prompt
-        formatted_context = ""
-        if contexts:
-            formatted_context = "Context information:\n\n"
-            for i, ctx in enumerate(contexts):
-                formatted_context += f"[{i+1}] From document '{ctx['document_title']}':\n{ctx['content']}\n\n"
+        # Format document context for LLM prompt using the improved formatter
+        formatted_context = PromptTemplateService.format_context(contexts) if contexts else ""
         
         # Handle conversation context if provided
         if conversation_context and len(conversation_context) > 0:
-            # Create a system message if none exists
+            # Create a system message if none exists, using the improved system message with citation instructions
             if not any(msg['role'] == 'system' for msg in conversation_context):
                 conversation_context.insert(0, {
                     'role': 'system',
-                    'content': "You are a helpful assistant answering questions based on retrieved document context."
+                    'content': PromptTemplateService.get_system_message("citation_focus")
                 })
             
             # Add the current query
