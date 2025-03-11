@@ -328,7 +328,7 @@ class ModelService:
                         models.append({
                             "id": model_name, 
                             "name": model_name, 
-                            "type": "llm" if not "embed" in model_name.lower() else "embedding",
+                            "type": "llm" if not ("embed" in model_name.lower() or "bge" in model_name.lower()) else "embedding",
                             "default": is_default
                         })
                 
