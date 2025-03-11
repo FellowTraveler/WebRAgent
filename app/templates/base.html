@@ -17,6 +17,7 @@
 </head>
 <body>
     <!-- Enhanced Navigation Bar -->
+    {% block navbar %}
     <nav class="navbar navbar-expand-lg sticky-top">
         <div class="container">
             <a class="navbar-brand fw-bold" href="{{ url_for('main.index') }}">
@@ -94,8 +95,9 @@
             </div>
         </div>
     </nav>
+    {% endblock %}
 
-    <div class="main-content mt-4">
+    <div class="main-content {% block content_class %}mt-4{% endblock %}">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <div class="container-fluid px-4">
@@ -121,6 +123,7 @@
     </div>
 
     <!-- Enhanced Footer -->
+    {% block footer %}
     <footer class="footer py-4">
         <div class="container">
             <div class="row align-items-center">
@@ -138,6 +141,7 @@
             </div>
         </div>
     </footer>
+    {% endblock %}
 
     <!-- The document preview modal has been replaced with an inline preview below the mindmap -->
 
