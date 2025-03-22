@@ -241,6 +241,58 @@ The system will automatically detect these models if they're available in your O
 - 📚 **Python Libraries**: For document processing (PyPDF2, BeautifulSoup, etc.)  
 - 📄 **Docling**: Advanced document processing for text extraction in various file formats  
 
+## 📊 System Architecture
+
+Below are detailed flowcharts of WebRAgent's key workflows and components.
+
+### System Overview
+
+The following diagram shows the high-level architecture of WebRAgent, illustrating how all components interact with each other and external systems:
+
+![WebRAgent System Overview](https://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/dkruyt/WebRAgent/main/docs_flowcharts.puml&start=WebRAgent%20System%20Overview&end=@enduml)
+
+### Document Upload and Processing
+
+This workflow shows how documents are uploaded, processed, chunked, and stored in both MongoDB and the Qdrant vector database:
+
+![Document Upload Workflow](https://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/dkruyt/WebRAgent/main/docs_flowcharts.puml&start=Document%20Upload%20and%20Processing%20Workflow&end=@enduml)
+
+### Text Extraction and Chunking
+
+This diagram illustrates how text is extracted from various document formats and chunked for optimal retrieval:
+
+![Text Extraction Workflow](https://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/dkruyt/WebRAgent/main/docs_flowcharts.puml&start=Text%20Extraction%20and%20Chunking%20Workflow&end=@enduml)
+
+### Vector Embedding and Storage
+
+This shows how document chunks are embedded and stored in the vector database:
+
+![Vector Embedding Workflow](https://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/dkruyt/WebRAgent/main/docs_flowcharts.puml&start=Vector%20Embedding%20and%20Storage%20Workflow&end=@enduml)
+
+### RAG Query Processing
+
+This diagram details how user queries are processed in the standard RAG workflow:
+
+![RAG Query Workflow](https://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/dkruyt/WebRAgent/main/docs_flowcharts.puml&start=RAG%20(Retrieval-Augmented%20Generation)%20Query%20Workflow&end=@enduml)
+
+### Agent Search Workflow
+
+This shows how complex queries are decomposed and processed by the agent search feature:
+
+![Agent Search Workflow](https://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/dkruyt/WebRAgent/main/docs_flowcharts.puml&start=Agent%20Search%20Workflow&end=@enduml)
+
+### Web Search Workflow
+
+This diagram explains how web searches are processed:
+
+![Web Search Workflow](https://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/dkruyt/WebRAgent/main/docs_flowcharts.puml&start=Web%20Search%20Workflow&end=@enduml)
+
+### Chat Workflow
+
+This illustrates how chat sessions are managed and processed:
+
+![Chat Workflow](https://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/dkruyt/WebRAgent/main/docs_flowcharts.puml&start=Chat%20Workflow&end=@enduml)
+
 ## 📂 Project Structure
 
 ```
